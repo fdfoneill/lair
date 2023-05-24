@@ -106,7 +106,13 @@ const dragon = {
     },
     
     drawHead() {
-        var headText = "A"
+        var headText = "A";
+        headText = "\u2660"; // spade
+//        headText = "\u25B2"; // triangle solid
+//        headText = "\u23CF"; // eject
+//        headText = "\u2206"; // triangle hollow
+        headText = "\u2665"; // heart inverted
+        var head_text_rotation_offset = Math.PI;
         context.font = (28*(this.scale/20)) + "px Georgia";
         context.fillStyle = this.color;
         context.save();
@@ -127,9 +133,17 @@ const dragon = {
             getAngleBetweenPoints(this.headPosition.x, this.headPosition.y, this.neckControlPoint.x, this.neckControlPoint.y)-(Math.PI/2) + 
             head_rotation - 
             (Math.PI/2);
-        context.rotate(head_rotation);
+        context.rotate(head_rotation+head_text_rotation_offset);
         var text_size = context.measureText(headText).width;
         context.fillText(headText, -1*(text_size/2), text_size/2);
+        // eyes
+//        var eyeText = ":";
+//        context.font = (28*(this.scale/40)) + "px Georgia";
+//        var eye_width = context.measureText(eyeText).width;
+//        var eye_height = context.measureText(eyeText).fontBoundingBoxAscent;
+//        context.fillStyle = "white";
+//        context.rotate(Math.PI/2);
+//        context.fillText(eyeText, -1*(eye_width/2), eye_height/2);
         context.restore();
     },
     
@@ -346,6 +360,7 @@ const dragon = {
     
     swishTail() {
         var hipAngle = getAngleBetweenPoints(this.hipPosition.x, this.hipPosition.y, this.spinePivotPoint.x, this.spinePivotPoint.y);
+        this.hipAngle = -hipAngle + Math.PI;
         var deltaTailSwish = (Math.sin(angleToMod2Pi(Date.now() * this.tailSwishSpeed / 1000)))+Math.PI;
         var tailAngle = hipAngle + deltaTailSwish;
         this.tailAngle = tailAngle;
@@ -383,7 +398,117 @@ const dragon = {
         context.stroke();
     },
     
-    limbs: {},
+    // limbs
+    maxClawStretch: 40,
+    maxFootStretch: 40,
+    
+    limbClock: Date.now(),
+    limbSpeedY: 10,
+    
+    leftClawPosition: {
+        relative: {x: -10, y: -20},
+        absolute: {x: 0, y: 0},
+        snapY: -20,
+        stepping: true,
+    },
+    rightClawPosition: {
+        relative: {x: -10, y: 20},
+        absolute: {x: 0, y: 0},
+        snapY: 20,
+        stepping: false,
+    },
+    leftFootPosition: {
+        relative: {x: -10, y: -20},
+        absolute: {x: 0, y: 0},
+        snapY: -20,
+        stepping: true,
+    },
+    rightFootPosition: {
+        relative: {x: -10, y: 20},
+        absolute: {x: 0, y: 0},
+        snapY: 20,
+        stepping: false,
+    },
+    
+    initializeLimbs(anchor) {
+        function initializeLimb(limb, anchor, angle) {
+            if (!limb.stepping) {
+                limb.absolute = xyRelativeToAbsolute(limb.relative.x, limb.relative.y, anchor.x, anchor.y, angle);
+            }
+        }
+        initializeLimb(this.leftClawPosition, this.neckPosition, this.rotation);
+        initializeLimb(this.rightClawPosition, this.neckPosition, this.rotation);
+        initializeLimb(this.leftFootPosition, this.hipPosition, this.hipAngle);
+        initializeLimb(this.rightFootPosition, this.hipPosition, this.hipAngle);
+    },
+    
+    fixLimb(limb, anchor, angle, opposite, maxStretch) {
+        // emergency reset!
+        if (
+            (cartesianDistance(limb.absolute.x, limb.absolute.y, anchor.x, anchor.y) > (maxStretch*2)) & 
+            (cartesianDistance(opposite.absolute.x, opposite.absolute.y, anchor.x, anchor.y) > (maxStretch*2))
+        ) {
+            console.log("emergency limb fix");
+            limb.relative.x = 0;
+            opposite.relative.x = 0;
+        }
+        if (limb.stepping) {
+            limb.relative.x = -opposite.relative.x;
+            if (limb.relative.y != limb.snapY) {
+                limb.relative.y += (limb.snapY-limb.relative.y) * (Date.now() - this.limbClock) * (this.limbSpeedY/1000);
+            }
+        } else {
+            limb.relative = xyAbsoluteToRelative(
+                limb.absolute.x,
+                limb.absolute.y,
+                anchor.x,
+                anchor.y,
+                angle
+            );
+            if (cartesianDistance(limb.absolute.x, limb.absolute.y, anchor.x, anchor.y) > maxStretch) {
+                limb.stepping = !limb.stepping;
+                opposite.stepping = !opposite.stepping;
+            }
+        }
+        limb.absolute = xyRelativeToAbsolute(
+            limb.relative.x,
+            limb.relative.y,
+            anchor.x,
+            anchor.y,
+            angle
+        )
+    },
+    
+    updateLimbs() {
+        this.fixLimb(this.leftClawPosition, this.neckPosition, this.rotation, this.rightClawPosition, this.maxClawStretch);
+        this.fixLimb(this.rightClawPosition, this.neckPosition, this.rotation, this.leftClawPosition, this.maxClawStretch);
+        this.fixLimb(this.leftFootPosition, this.hipPosition, this.hipAngle, this.rightFootPosition, this.maxFootStretch);
+        this.fixLimb(this.rightFootPosition, this.hipPosition, this.hipAngle, this.leftFootPosition, this.maxFootStretch);
+        
+        this.limbClock = Date.now();
+    },
+    
+    drawLimb(limb, anchor, angle) {
+//        context.beginPath();
+//        context.moveTo(anchor.x, anchor.y);
+//        context.lineTo(limb.absolute.x, limb.absolute.y);
+//        context.stroke();
+        var extremity_text = "\u25B4";
+        var text_size = context.measureText(extremity_text).width;
+        context.fillStyle = this.color;
+        context.save();
+        context.translate(limb.absolute.x, limb.absolute.y);
+        context.rotate(-angle - (Math.PI/2));
+        context.fillText(extremity_text, -1*(text_size/2), text_size/2);
+        context.restore();
+    },
+    
+    drawLimbs() {
+        this.drawLimb(this.leftClawPosition, this.neckPosition, this.rotation);
+        this.drawLimb(this.rightClawPosition, this.neckPosition, this.rotation);
+        this.drawLimb(this.leftFootPosition, this.hipPosition, this.rotation);
+        this.drawLimb(this.rightFootPosition, this.hipPosition, this.rotation);
+    },
     
     fire: {
         spurtClock: Date.now(),
@@ -475,7 +600,13 @@ const dragon = {
         
         drawTank() {
             context.save();
-            context.fillStyle = "green";
+            if (this.currentFireTank > (this.maxFireTank * 0.66)) {
+                context.fillStyle = "green";
+            } else if (this.currentFireTank > (this.maxFireTank * 0.33)) {
+                context.fillStyle = "orange";
+            } else {
+                context.fillStyle = "red";
+            }
             var tankText = "Fire: " + Math.floor(this.currentFireTank/10) + "/" + Math.floor(this.maxFireTank/10);
             if (this.fireLock) {
                 context.fillStyle = "gray";
@@ -486,12 +617,12 @@ const dragon = {
     },
     
     update() {
-        if (isKeyDown("mouse")) {
+        if (isKeyDown(" ")) {
             this.moveShoulders();   
             this.turnBody();
             this.moveHips();
         }
-        if (isKeyDown(" ")) {
+        if (isKeyDown("f")) {
             this.fire.spurt();
         }
         this.fire.drawTank();
@@ -518,6 +649,9 @@ const dragon = {
         this.spinePivotPoint = this.getSpinePivotPoint(show);
         this.tailPivotPoint = this.getTailPivotPoint(show);
         this.tailPosition = this.swishTail();
+        this.updateLimbs();
+        
+        this.drawLimbs();
         this.drawTail(show);
         this.drawSpine(show);
         this.drawHips();
@@ -536,6 +670,7 @@ dragon.tailLength = dragon.scale * 6;
 dragon.hipPosition.x = dragon.neckPosition.x + dragon.spineLength;
 dragon.hipPosition.y = dragon.neckPosition.y;
 dragon.fire.currentFireTank = dragon.fire.maxFireTank;
+dragon.initializeLimbs();
 
 
 function cartesianDistance(x1, y1, x2, y2) {
@@ -568,6 +703,25 @@ function getPointAlongQuadraticCurve(startX, startY, cpX, cpY, endX, endY, t) {
     var x = (1 - t) * (1 - t) * startX + 2 * (1 - t) * t * cpX + t * t * endX;
     var y = (1 - t) * (1 - t) * startY + 2 * (1 - t) * t * cpY + t * t * endY;
     return { x: x, y: y };
+}
+
+function xyRelativeToAbsolute(x, y, center_x, center_y, angle) {
+    var absolute_xy = {x: (Math.sin(angle)*y)+(Math.cos(-angle)*x), y: (Math.cos(angle)*y)+(Math.sin(-angle)*x)};
+    absolute_xy.x += center_x;
+    absolute_xy.y += center_y;
+    return absolute_xy;
+}
+
+function xyAbsoluteToRelative(absolute_x, absolute_y, center_x, center_y, angle) {
+    // Step 1: Shifting the coordinates
+    var shifted_x = absolute_x - center_x;
+    var shifted_y = absolute_y - center_y;
+
+    // Step 2: Rotating the coordinates
+    var relative_x = (Math.cos(angle) * shifted_x) - (Math.sin(angle) * shifted_y);
+    var relative_y = (Math.sin(angle) * shifted_x) + (Math.cos(angle) * shifted_y);
+
+    return { x: relative_x, y: relative_y };
 }
 
 function isKeyDown(key) {
