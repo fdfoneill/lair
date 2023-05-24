@@ -390,6 +390,12 @@ const dragon = {
         
         fireThickness: 10,
         burstSize: 100,
+        maxFireTank: 1000,
+        currentFireTank: 0,
+        tankRefillSpeed: 200,
+        tankClock: Date.now(),
+        fireLock: false,
+        fireFloor: 900,
         
         particles: [],
         
@@ -435,17 +441,47 @@ const dragon = {
             }
             // remove expired particles
             this.particles = this.particles.filter(obj => !obj.expired);
+            // update fireLock
+            if (!this.fireLock) {
+                if (this.currentFireTank < 1) {
+                    this.fireLock = true;
+                }
+            } else if (this.currentFireTank >= this.fireFloor) {
+                this.fireLock = false;
+            }
+            // refill tank
+            if (this.currentFireTank < this.maxFireTank) {
+                this.currentFireTank += Math.floor(
+                    Math.min(((Date.now() - this.spurtClock)/1000) * this.tankRefillSpeed, (this.maxFireTank-this.currentFireTank))
+                );
+            }
             this.spurtClock = Date.now();
         },
         
         spurt() {
-            var timeSinceLastSpurt = (Date.now() - this.spurtClock);
-            if (timeSinceLastSpurt > this.burstSize) {
-                timeSinceLastSpurt = this.burstSize;
+            if (!this.fireLock) {
+                var timeSinceLastSpurt = (Date.now() - this.spurtClock);
+                if (timeSinceLastSpurt > this.burstSize) {
+                    timeSinceLastSpurt = this.burstSize;
+                }
+                var spurtSize = timeSinceLastSpurt;
+                for (var i=1; i < spurtSize; i++) {
+                    this.particles.push(this.newParticle(dragon));
+                    this.currentFireTank -= 1;
+                    this.currentFireTank = Math.max(this.currentFireTank, 0);
+                }
             }
-            for (var i=1; i < timeSinceLastSpurt - ((Math.random()*100)/this.fireThickness); i++) {
-                this.particles.push(this.newParticle(dragon));
+        },
+        
+        drawTank() {
+            context.save();
+            context.fillStyle = "green";
+            var tankText = "Fire: " + Math.floor(this.currentFireTank/10) + "/" + Math.floor(this.maxFireTank/10);
+            if (this.fireLock) {
+                context.fillStyle = "gray";
             }
+            context.fillText(tankText, 5,15);
+            context.restore();
         },
     },
     
@@ -458,6 +494,7 @@ const dragon = {
         if (isKeyDown(" ")) {
             this.fire.spurt();
         }
+        this.fire.drawTank();
         this.rotation = angleToMod2Pi(this.rotation);
         
         if (showGuides.checked) {
@@ -498,13 +535,8 @@ dragon.spineLength = dragon.scale * 8;
 dragon.tailLength = dragon.scale * 6;
 dragon.hipPosition.x = dragon.neckPosition.x + dragon.spineLength;
 dragon.hipPosition.y = dragon.neckPosition.y;
+dragon.fire.currentFireTank = dragon.fire.maxFireTank;
 
-class FireParticle {
-    constructor() {
-       this.angle = 0; 
-    }
-    
-}
 
 function cartesianDistance(x1, y1, x2, y2) {
     return Math.sqrt(((x1-x2)**2) + ((y1-y2)**2))
