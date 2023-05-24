@@ -35,9 +35,9 @@ const dragon = {
     tailPosition: {x: 0, y: 0},
     walkingSpeed: 1, // percent of neck length moved per second
     headCursorDistanceTolerance: 1,
-    fireSpeed: 5,
-    fireDuration: 500,
-    fireSpread: 0.4,
+    fireSpeed: 4,
+    fireDuration: 800,
+    fireSpread: 0.3,
     fireSymbol: ".",
     fireColor: "red",
     
