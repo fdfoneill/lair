@@ -35,6 +35,11 @@ const dragon = {
     tailPosition: {x: 0, y: 0},
     walkingSpeed: 1, // percent of neck length moved per second
     headCursorDistanceTolerance: 1,
+    fireSpeed: 10,
+    fireDuration: 500,
+    fireSpread: .5,
+    fireSymbol: ".",
+    fireColor: "red",
     
     angleToAbsolute(relative_angle, negative=false) {
         if (negative) {
@@ -360,29 +365,39 @@ const dragon = {
     limbs: {},
     
     fire: {
-        fireSpeed: 5,
-        fireDuration: 5000,
-        fireSpread: 5,
-        fireSymbol: ".",
         
         particles: [],
         
         newParticle(source) {
             np = {
-                location: source.headPosition,
+                location: {x: source.headPosition.x, y: source.headPosition.y},
+                created: Date.now(),
                 lastUpdated: Date.now(),
                 angle: getAngleBetweenPoints(source.headPosition.x, source.headPosition.y, cursorPosition.x, cursorPosition.y),
+                duration: source.fireDuration,
+                color: source.fireColor,
+                symbol: source.fireSymbol,
+                expired: false,
                 move() {
-                    this.angle += (Math.random() - 0.5) * this.fireSpread;
-                    location.x += Math.cos(this.angle) * this.fireSpeed;
-                    location.y += Math.sin(this.angle) * this.fireSpeed;
+                    this.angle += (Math.random() - 0.5) * source.fireSpread;
+                    this.location.x += Math.cos(this.angle) * source.fireSpeed;
+                    this.location.y += Math.sin(this.angle) * source.fireSpeed;
                 },
                 draw() {
-                  return 1;  
+                    var symbol_size = context.measureText(this.symbol).width;
+                    context.save();
+                    context.translate(this.location.x, this.location.y);
+                    context.fillStyle = this.color;
+                    context.fillText(this.symbol, -1*(symbol_size/2), symbol_size/2);
+                    context.restore();
                 },
                 update() {
                     this.draw();
+                    this.move();
                     this.lastUpdated = Date.now();
+                    if ((Date.now() - this.created) > this.duration) {
+                        this.expired = true;
+                    }
                 },
             }
             return np;
@@ -392,10 +407,17 @@ const dragon = {
             for (var i=0; i < this.particles.length; i+=1) {
                 this.particles[i].update();
             }
+            // remove expired particles
+            this.particles = this.particles.filter(obj => !obj.expired);
+            if (this.particles.length > 0) {
+                //console.log(this.particles[0].location);
+                //console.log(this.particles[0].symbol);
+                1;
+            }
         },
         
         spurt() {
-            console.log("spurting");
+            this.particles.push(this.newParticle(dragon));
         },
     },
     
@@ -408,6 +430,7 @@ const dragon = {
         if (isKeyDown(" ")) {
             this.fire.spurt();
         }
+        this.fire.updateParticles();
         this.rotation = angleToMod2Pi(this.rotation);
         
         if (showGuides.checked) {
