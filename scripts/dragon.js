@@ -35,6 +35,11 @@ const dragon = {
     tailPosition: {x: 0, y: 0},
     walkingSpeed: 1, // percent of neck length moved per second
     headCursorDistanceTolerance: 1,
+    fireSpeed: 5,
+    fireDuration: 500,
+    fireSpread: 0.4,
+    fireSymbol: ".",
+    fireColor: "red",
     
     angleToAbsolute(relative_angle, negative=false) {
         if (negative) {
@@ -131,6 +136,7 @@ const dragon = {
     
     drawNeck() {
         context.strokeStyle = this.color;
+        context.lineWidth = 2;
         context.beginPath();
         context.moveTo(this.neckPosition.x, this.neckPosition.y);
         context.quadraticCurveTo(this.neckControlPoint.x, this.neckControlPoint.y, this.headPosition.x, this.headPosition.y);
@@ -170,7 +176,7 @@ const dragon = {
     },
     
     drawShoulders() {
-        var shoulder_text = "O";
+        var shoulder_text = "\u23FA";
         context.fillStyle = this.color;
         var text_size = context.measureText(shoulder_text).width;
         context.save();
@@ -239,7 +245,7 @@ const dragon = {
     },
     
     drawHips() {
-        var hip_text = "O";
+        var hip_text = "\u23FA";
         var text_size = context.measureText(hip_text).width;
         context.fillStyle = this.color;
         context.save();
@@ -274,6 +280,7 @@ const dragon = {
         
         context.strokeStyle = this.color;
         context.beginPath();
+        context.lineWidth = 3.5;
         context.moveTo(this.neckPosition.x, this.neckPosition.y);
         context.quadraticCurveTo(spine_control_point.x, spine_control_point.y, this.hipPosition.x, this.hipPosition.y);
         context.stroke();
@@ -352,6 +359,7 @@ const dragon = {
         }
         context.strokeStyle = this.color;
         context.beginPath();
+        context.lineWidth = 2;
         context.moveTo(this.hipPosition.x, this.hipPosition.y);
         context.quadraticCurveTo(tail_control_point.x, tail_control_point.y, this.tailPosition.x, this.tailPosition.y);
         context.stroke();
@@ -359,12 +367,80 @@ const dragon = {
     
     limbs: {},
     
+    fire: {
+        spurtClock: Date.now(),
+        
+        fireThickness: 10,
+        burstSize: 100,
+        
+        particles: [],
+        
+        newParticle(source) {
+            np = {
+                location: {x: source.headPosition.x, y: source.headPosition.y},
+                created: Date.now(),
+                lastUpdated: Date.now(),
+                angle: getAngleBetweenPoints(source.headPosition.x, source.headPosition.y, cursorPosition.x, cursorPosition.y),
+                duration: source.fireDuration + ((Math.random()-0.5)*source.fireDuration),
+                color: source.fireColor,
+                symbol: source.fireSymbol,
+                expired: false,
+                move() {
+                    this.angle += (Math.random() - 0.5) * source.fireSpread;
+                    this.location.x += Math.cos(this.angle) * (source.fireSpeed+((Math.random()-0.5)*source.fireSpeed));
+                    this.location.y += Math.sin(this.angle) * (source.fireSpeed+((Math.random()-0.5)*source.fireSpeed));
+                },
+                draw() {
+                    var symbol_size = context.measureText(this.symbol).width;
+                    context.save();
+                    context.translate(this.location.x, this.location.y);
+                    context.fillStyle = this.color;
+                    context.fillText(this.symbol, -1*(symbol_size/2), symbol_size/2);
+                    context.restore();
+                },
+                update() {
+                    this.draw();
+                    this.move();
+                    this.lastUpdated = Date.now();
+                    if ((Date.now() - this.created) > this.duration) {
+                        this.expired = true;
+                    }
+                },
+            }
+            return np;
+        },
+        
+        updateParticles() {
+            for (var i=0; i < this.particles.length; i+=1) {
+                this.particles[i].update();
+            }
+            // remove expired particles
+            this.particles = this.particles.filter(obj => !obj.expired);
+            console.log(this.particles.length);
+            this.spurtClock = Date.now();
+        },
+        
+        spurt() {
+            var timeSinceLastSpurt = (Date.now() - this.spurtClock);
+            if (timeSinceLastSpurt > this.burstSize) {
+                timeSinceLastSpurt = this.burstSize;
+            }
+            for (var i=1; i < timeSinceLastSpurt - ((Math.random()*100)/this.fireThickness); i++) {
+                this.particles.push(this.newParticle(dragon));
+            }
+        },
+    },
+    
     update() {
         if (isKeyDown("mouse")) {
             this.moveShoulders();   
             this.turnBody();
             this.moveHips();
         }
+        if (isKeyDown(" ")) {
+            this.fire.spurt();
+        }
+        this.fire.updateParticles();
         this.rotation = angleToMod2Pi(this.rotation);
         
         if (showGuides.checked) {
@@ -404,6 +480,13 @@ dragon.spineLength = dragon.scale * 8;
 dragon.tailLength = dragon.scale * 6;
 dragon.hipPosition.x = dragon.neckPosition.x + dragon.spineLength;
 dragon.hipPosition.y = dragon.neckPosition.y;
+
+class FireParticle {
+    constructor() {
+       this.angle = 0; 
+    }
+    
+}
 
 function cartesianDistance(x1, y1, x2, y2) {
     return Math.sqrt(((x1-x2)**2) + ((y1-y2)**2))
