@@ -35,9 +35,9 @@ const dragon = {
     tailPosition: {x: 0, y: 0},
     walkingSpeed: 1, // percent of neck length moved per second
     headCursorDistanceTolerance: 1,
-    fireSpeed: 10,
+    fireSpeed: 5,
     fireDuration: 500,
-    fireSpread: .5,
+    fireSpread: 0.4,
     fireSymbol: ".",
     fireColor: "red",
     
@@ -136,6 +136,7 @@ const dragon = {
     
     drawNeck() {
         context.strokeStyle = this.color;
+        context.lineWidth = 2;
         context.beginPath();
         context.moveTo(this.neckPosition.x, this.neckPosition.y);
         context.quadraticCurveTo(this.neckControlPoint.x, this.neckControlPoint.y, this.headPosition.x, this.headPosition.y);
@@ -175,7 +176,7 @@ const dragon = {
     },
     
     drawShoulders() {
-        var shoulder_text = "O";
+        var shoulder_text = "\u23FA";
         context.fillStyle = this.color;
         var text_size = context.measureText(shoulder_text).width;
         context.save();
@@ -244,7 +245,7 @@ const dragon = {
     },
     
     drawHips() {
-        var hip_text = "O";
+        var hip_text = "\u23FA";
         var text_size = context.measureText(hip_text).width;
         context.fillStyle = this.color;
         context.save();
@@ -279,6 +280,7 @@ const dragon = {
         
         context.strokeStyle = this.color;
         context.beginPath();
+        context.lineWidth = 3.5;
         context.moveTo(this.neckPosition.x, this.neckPosition.y);
         context.quadraticCurveTo(spine_control_point.x, spine_control_point.y, this.hipPosition.x, this.hipPosition.y);
         context.stroke();
@@ -357,6 +359,7 @@ const dragon = {
         }
         context.strokeStyle = this.color;
         context.beginPath();
+        context.lineWidth = 2;
         context.moveTo(this.hipPosition.x, this.hipPosition.y);
         context.quadraticCurveTo(tail_control_point.x, tail_control_point.y, this.tailPosition.x, this.tailPosition.y);
         context.stroke();
@@ -365,6 +368,10 @@ const dragon = {
     limbs: {},
     
     fire: {
+        spurtClock: Date.now(),
+        
+        fireThickness: 10,
+        burstSize: 100,
         
         particles: [],
         
@@ -374,14 +381,14 @@ const dragon = {
                 created: Date.now(),
                 lastUpdated: Date.now(),
                 angle: getAngleBetweenPoints(source.headPosition.x, source.headPosition.y, cursorPosition.x, cursorPosition.y),
-                duration: source.fireDuration,
+                duration: source.fireDuration + ((Math.random()-0.5)*source.fireDuration),
                 color: source.fireColor,
                 symbol: source.fireSymbol,
                 expired: false,
                 move() {
                     this.angle += (Math.random() - 0.5) * source.fireSpread;
-                    this.location.x += Math.cos(this.angle) * source.fireSpeed;
-                    this.location.y += Math.sin(this.angle) * source.fireSpeed;
+                    this.location.x += Math.cos(this.angle) * (source.fireSpeed+((Math.random()-0.5)*source.fireSpeed));
+                    this.location.y += Math.sin(this.angle) * (source.fireSpeed+((Math.random()-0.5)*source.fireSpeed));
                 },
                 draw() {
                     var symbol_size = context.measureText(this.symbol).width;
@@ -409,15 +416,18 @@ const dragon = {
             }
             // remove expired particles
             this.particles = this.particles.filter(obj => !obj.expired);
-            if (this.particles.length > 0) {
-                //console.log(this.particles[0].location);
-                //console.log(this.particles[0].symbol);
-                1;
-            }
+            console.log(this.particles.length);
+            this.spurtClock = Date.now();
         },
         
         spurt() {
-            this.particles.push(this.newParticle(dragon));
+            var timeSinceLastSpurt = (Date.now() - this.spurtClock);
+            if (timeSinceLastSpurt > this.burstSize) {
+                timeSinceLastSpurt = this.burstSize;
+            }
+            for (var i=1; i < timeSinceLastSpurt - ((Math.random()*100)/this.fireThickness); i++) {
+                this.particles.push(this.newParticle(dragon));
+            }
         },
     },
     
