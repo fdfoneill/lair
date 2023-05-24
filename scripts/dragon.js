@@ -1,7 +1,14 @@
 var showGuides = document.getElementById("showGuides");
+
 const canvas = document.getElementById("lairCanvas");
 const context = canvas.getContext("2d");
 const rect = canvas.getBoundingClientRect();
+
+const windowHeight = window.innerHeight;
+const windowWidth = window.innerWidth;
+const canvasSize = Math.min(windowHeight, windowWidth) * 0.8;
+canvas.width = canvasSize;
+canvas.height = canvasSize;
 
 var cursorPosition = {x: 0, y: 0};
 
@@ -12,7 +19,7 @@ canvas.addEventListener("mousemove", (event) => {
 
 const dragon = {
     rotation: 0,
-    scale: 15, 
+    scale: canvasSize/50,
     color: "blue",
     time: Date.now(),
     
@@ -538,7 +545,10 @@ function isKeyDown(key) {
 var keyState = {};
 
 document.addEventListener('keydown', function(event) {
-  keyState[event.key] = true;
+    if (event.key == " ") {
+        event.preventDefault();
+    }
+    keyState[event.key] = true;
 });
 
 document.addEventListener('keyup', function(event) {
