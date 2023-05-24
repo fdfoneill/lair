@@ -440,7 +440,6 @@ const dragon = {
         if (isKeyDown(" ")) {
             this.fire.spurt();
         }
-        this.fire.updateParticles();
         this.rotation = angleToMod2Pi(this.rotation);
         
         if (showGuides.checked) {
@@ -469,6 +468,7 @@ const dragon = {
         this.drawHips();
         this.drawNeck();
         this.drawShoulders();
+        this.fire.updateParticles();
         this.drawHead();
         this.time = Date.now();
     },
