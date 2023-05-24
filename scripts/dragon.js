@@ -15,26 +15,33 @@ const dragon = {
     scale: 15, 
     color: "blue",
     time: Date.now(),
+    
     directionHeadToCursor: 0,
     neckPosition: {x: canvas.width / 2, y: canvas.height / 2},
     headAngle: Math.PI,
+    faceAngle: Math.PI,
     minHeadAngle: (2/5) * Math.PI,
     maxHeadTurn: (1/5) * Math.PI,
     headPosition: {x: 0, y: 0},
     headTurnSpeed: 3,
     neckControlPoint: {x: 0, y: 0},
-    bodyTurnSpeed: 1, 
+    
     spinePivotPoint: {x: 0, y: 0},
     spineLength: 20,
+    
     hipAngle: 0,
     hipPosition: {x: 0, y: 0},
+    
     tailPivotPoint: {x: 0, y: 0},
     tailSwishSpeed: 1,
     tailAngle: 0,
     tailLength: 0,
     tailPosition: {x: 0, y: 0},
-    walkingSpeed: 1, // percent of neck length moved per second
+    
+    bodyTurnSpeed: 1, 
+    walkingSpeed: 1, // fraction of neck length moved per second
     headCursorDistanceTolerance: 1,
+    
     fireSpeed: 4,
     fireDuration: 800,
     fireSpread: 0.3,
@@ -109,6 +116,10 @@ const dragon = {
         } else if ((head_rotation < ((2*Math.PI)-this.maxHeadTurn)) & (head_rotation > Math.PI)) {
             head_rotation = ((2*Math.PI)-this.maxHeadTurn);
         }
+        this.faceAngle = 
+            getAngleBetweenPoints(this.headPosition.x, this.headPosition.y, this.neckControlPoint.x, this.neckControlPoint.y)-(Math.PI/2) + 
+            head_rotation - 
+            (Math.PI/2);
         context.rotate(head_rotation);
         var text_size = context.measureText(headText).width;
         context.fillText(headText, -1*(text_size/2), text_size/2);
@@ -380,7 +391,8 @@ const dragon = {
                 location: {x: source.headPosition.x, y: source.headPosition.y},
                 created: Date.now(),
                 lastUpdated: Date.now(),
-                angle: getAngleBetweenPoints(source.headPosition.x, source.headPosition.y, cursorPosition.x, cursorPosition.y),
+                //angle: getAngleBetweenPoints(source.headPosition.x, source.headPosition.y, cursorPosition.x, cursorPosition.y),
+                angle: source.faceAngle,
                 duration: source.fireDuration + ((Math.random()-0.5)*source.fireDuration),
                 color: source.fireColor,
                 symbol: source.fireSymbol,
@@ -416,7 +428,6 @@ const dragon = {
             }
             // remove expired particles
             this.particles = this.particles.filter(obj => !obj.expired);
-            console.log(this.particles.length);
             this.spurtClock = Date.now();
         },
         
