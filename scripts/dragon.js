@@ -359,11 +359,54 @@ const dragon = {
     
     limbs: {},
     
+    fire: {
+        fireSpeed: 5,
+        fireDuration: 5000,
+        fireSpread: 5,
+        fireSymbol: ".",
+        
+        particles: [],
+        
+        newParticle(source) {
+            np = {
+                location: source.headPosition,
+                lastUpdated: Date.now(),
+                angle: getAngleBetweenPoints(source.headPosition.x, source.headPosition.y, cursorPosition.x, cursorPosition.y),
+                move() {
+                    this.angle += (Math.random() - 0.5) * this.fireSpread;
+                    location.x += Math.cos(this.angle) * this.fireSpeed;
+                    location.y += Math.sin(this.angle) * this.fireSpeed;
+                },
+                draw() {
+                  return 1;  
+                },
+                update() {
+                    this.draw();
+                    this.lastUpdated = Date.now();
+                },
+            }
+            return np;
+        },
+        
+        updateParticles() {
+            for (var i=0; i < this.particles.length; i+=1) {
+                this.particles[i].update();
+            }
+        },
+        
+        spurt() {
+            console.log("spurting");
+        },
+    },
+    
     update() {
         if (isKeyDown("mouse")) {
             this.moveShoulders();   
             this.turnBody();
             this.moveHips();
+        }
+        if (isKeyDown(" ")) {
+            this.fire.spurt();
         }
         this.rotation = angleToMod2Pi(this.rotation);
         
@@ -404,6 +447,13 @@ dragon.spineLength = dragon.scale * 8;
 dragon.tailLength = dragon.scale * 6;
 dragon.hipPosition.x = dragon.neckPosition.x + dragon.spineLength;
 dragon.hipPosition.y = dragon.neckPosition.y;
+
+class FireParticle {
+    constructor() {
+       this.angle = 0; 
+    }
+    
+}
 
 function cartesianDistance(x1, y1, x2, y2) {
     return Math.sqrt(((x1-x2)**2) + ((y1-y2)**2))
