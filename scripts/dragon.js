@@ -6,7 +6,7 @@ const rect = canvas.getBoundingClientRect();
 
 const windowHeight = window.innerHeight;
 const windowWidth = window.innerWidth;
-const canvasSize = Math.min(windowHeight, windowWidth) * 0.8;
+const canvasSize = 600;//Math.min(windowHeight, windowWidth) * 0.8;
 canvas.width = canvasSize;
 canvas.height = canvasSize;
 
