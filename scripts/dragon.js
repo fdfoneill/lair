@@ -955,7 +955,7 @@ const interlopers = {
 
 // interloper trigger 
 document.addEventListener('keydown', function(event) {
-    if (event.key == "i") {
+    if (event.key == "s") {
         var entranceName = choose(["top", "bottom", "left", "right"]);
         var entrance = edges.get(entranceName)
         console.log(entranceName);
