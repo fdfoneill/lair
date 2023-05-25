@@ -893,6 +893,8 @@ const interlopers = {
                         this.hp -= dragon.fireDamage * ((Date.now() - interlopers.interloperClock)/1000);
                     }
                 }
+                //adjust color
+                //if (this.hp <)
                 // check for kill
                 if (this.hp <= 0) {
                     this.dead = true;
@@ -957,9 +959,14 @@ const interlopers = {
 document.addEventListener('keydown', function(event) {
     if (event.key == "s") {
         var entranceName = choose(["top", "bottom", "left", "right"]);
-        var entrance = edges.get(entranceName)
-        console.log(entranceName);
-        interlopers.interloperList.push(interlopers.newInterloper(entrance.x, entrance.y, entrance.angle + ((Math.random()-0.5) * Math.PI)));
+        var entrance = edges.get(entranceName);
+        interlopers.interloperList.push(interlopers.newInterloper(entrance.x, entrance.y, entrance.angle + ((Math.random()-0.3) * Math.PI)));
+    } else if (event.key == "a") {
+        var entranceName = choose(["top", "bottom", "left", "right"]);
+        var entrance = edges.get(entranceName);
+        for (var i = 0; i < 5; i++) {
+            interlopers.interloperList.push(interlopers.newInterloper(entrance.x, entrance.y, entrance.angle + ((Math.random()-0.3) * Math.PI)));
+        }
     }
 });
 
