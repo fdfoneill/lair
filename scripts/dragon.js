@@ -9,6 +9,10 @@ slider.oninput = function() {
   output.innerHTML = "Horde size: " + this.value;
 }
 
+// get foe type
+var foeType = document.getElementById("foeType");
+var probOfKnight = 0.2;
+
 const canvas = document.getElementById("lairCanvas");
 const context = canvas.getContext("2d");
 const rect = canvas.getBoundingClientRect();
@@ -866,7 +870,7 @@ const interlopers = {
             x: x,
             y: y,
             facing: facing,
-            speed: speed,
+            speed: speed + ((Math.random() - 0.5) * 20),
             hp: hp,
             symbol: symbol,
             symbolRotation: symbolRotation,
@@ -994,10 +998,12 @@ document.addEventListener('keydown', function(event) {
     var entrance = entrances.get(entranceName);
     if (event.key == "s") {
         for (var i = 0; i < slider.value; i++) {
-            interlopers.interloperList.push(interlopers.newInterloper(entrance.x, entrance.y, entrance.angle + ((Math.random()-0.5) * Math.PI / 1.5)));
+            if (Math.random() > probOfKnight) {
+                interlopers.interloperList.push(interlopers.newInterloper(entrance.x, entrance.y, entrance.angle + ((Math.random()-0.5) * Math.PI / 1.5)));
+            } else {
+                interlopers.interloperList.push(interlopers.newKnight(entrance.x, entrance.y, entrance.angle + ((Math.random()-0.5) * Math.PI / 1.5)));
+            }
         }
-    } else if (event.key == "a") {
-        interlopers.interloperList.push(interlopers.newKnight(entrance.x, entrance.y, entrance.angle + ((Math.random()-0.5) * Math.PI / 1.5)));
     }
 });
 
