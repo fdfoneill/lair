@@ -27,7 +27,7 @@ const edges = new Map([
 const dragon = {
     rotation: 0,
     scale: canvasSize/50,
-    color: "blue",
+    color: "#0033cc",
     time: Date.now(),
     
     directionHeadToCursor: 0,
@@ -62,7 +62,7 @@ const dragon = {
     fireDuration: 800,
     fireSpread: 0.3,
     fireSymbol: ".",
-    fireColor: "red",
+    fireColor: "#ff0000",
     fireDamage: 5,
     
     angleToAbsolute(relative_angle, negative=false) {
@@ -88,7 +88,7 @@ const dragon = {
             context.lineTo(point_coords.x, point_coords.y);
         }
         context.closePath();
-        context.strokeStyle = "black";
+        context.strokeStyle = "#000000";
         context.stroke();
     },
     
@@ -160,7 +160,7 @@ const dragon = {
             var cpText = "."
             context.save();
             context.font = (28*(this.scale/20)) + "px Georgia";
-            context.fillStyle = "black";
+            context.fillStyle = "#000000";
             context.translate(out_control_point.x, out_control_point.y);
             var text_size = context.measureText(cpText).width;
             context.fillText(cpText, -1*(text_size/2), text_size/2);
@@ -243,7 +243,7 @@ const dragon = {
             var cpText = "."
             context.save();
             context.font = (28*(this.scale/20)) + "px Georgia";
-            context.fillStyle = "black";
+            context.fillStyle = "#000000";
             context.translate(out_pivot_point.x, out_pivot_point.y);
             var text_size = context.measureText(cpText).width;
             context.fillText(cpText, -1*(text_size/2), text_size/2);
@@ -268,7 +268,7 @@ const dragon = {
             context.lineTo(hip_point.x, hip_point.y);
         }
         context.closePath();
-        context.strokeStyle = "black";
+        context.strokeStyle = "#000000";
         context.stroke();
     },
     
@@ -307,7 +307,7 @@ const dragon = {
             var scp_text = ".";
             var text_size = context.measureText(scp_text).width;
             context.save();
-            context.fillStyle = "black"
+            context.fillStyle = "#000000"
             context.translate(spine_control_point.x, spine_control_point.y);
             context.rotate(-1 * getAngleBetweenPoints(this.hipPosition.x, this.hipPosition.y, this.spinePivotPoint.x, this.spinePivotPoint.y)/2);
             context.fillText(scp_text, -1*(text_size/2), text_size/2);
@@ -333,7 +333,7 @@ const dragon = {
             var cpText = "."
             context.save();
             context.font = (28*(this.scale/20)) + "px Georgia";
-            context.fillStyle = "black";
+            context.fillStyle = "#000000";
             context.translate(out_pivot_point.x, out_pivot_point.y);
             var text_size = context.measureText(cpText).width;
             context.fillText(cpText, -1*(text_size/2), text_size/2);
@@ -358,7 +358,7 @@ const dragon = {
             context.lineTo(hip_point.x, hip_point.y);
         }
         context.closePath();
-        context.strokeStyle = "black";
+        context.strokeStyle = "#000000";
         context.stroke();
     },
     
@@ -388,7 +388,7 @@ const dragon = {
             var scp_text = ".";
             var text_size = context.measureText(scp_text).width;
             context.save();
-            context.fillStyle = "black"
+            context.fillStyle = "#000000"
             context.translate(tail_control_point.x, tail_control_point.y);
             context.rotate(-1 * getAngleBetweenPoints(this.tailPosition.x, this.tailPosition.y, this.tailPivotPoint.x, this.tailPivotPoint.y)/2);
             context.fillText(scp_text, -1*(text_size/2), text_size/2);
@@ -759,15 +759,15 @@ const dragon = {
         drawTank() {
             context.save();
             if (this.currentFireTank > (this.maxFireTank * 0.66)) {
-                context.fillStyle = "green";
+                context.fillStyle = "#17db17"; // green
             } else if (this.currentFireTank > (this.maxFireTank * 0.33)) {
-                context.fillStyle = "orange";
+                context.fillStyle = "#ffa500"; //orange
             } else {
-                context.fillStyle = "red";
+                context.fillStyle = "#ff0000"; //red
             }
             var tankText = "Fire: " + Math.floor(this.currentFireTank/10) + "/" + Math.floor(this.maxFireTank/10);
             if (this.fireLock) {
-                context.fillStyle = "gray";
+                context.fillStyle = "#a59f9f"; //gray
             }
             context.fillText(tankText, 5,15);
             context.restore();
@@ -843,7 +843,7 @@ const interlopers = {
     //symbol: "\u26A8",
     symbol: "\u2376",
     symbolRotation: -Math.PI/2,
-    color: "green",
+    color: "#339665",
     interloperClock: Date.now(),
     
     newInterloper(x, y, facing, speed=50, zigzag=5, hp=10, symbol=this.symbol, symbolRotation=this.symbolRotation, color=this.color) {
@@ -924,7 +924,7 @@ const interlopers = {
         var killText = "Interlopers Killed: " + interlopersKilled;
         var killTextWidth = context.measureText(killText).width;
         context.save();
-        context.fillStyle = "black";
+        context.fillStyle = "#000000";
         context.translate(canvasSize - (killTextWidth+5), 15);
         context.fillText(killText, 0, 0)
         context.restore();
@@ -932,7 +932,7 @@ const interlopers = {
         var goldText = "Gold Stolen: " + Math.floor(goldStolen) + "gp";
         var goldTextWidth = context.measureText(goldText).width;
         context.save();
-        context.fillStyle = "black";
+        context.fillStyle = "#000000";
         context.translate(canvasSize - (goldTextWidth+5), 40);
         context.fillText(goldText, 0, 0)
         context.restore();
