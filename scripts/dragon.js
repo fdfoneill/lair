@@ -399,34 +399,34 @@ const dragon = {
     },
     
     // limbs
-    maxClawStretch: 40,
-    maxFootStretch: 40,
+    maxClawStretch: 30* ((canvasSize/50)/12),
+    maxFootStretch: 20* ((canvasSize/50)/12),
     
     limbClock: Date.now(),
-    limbSpeedY: 10,
+    limbSpeedY: 10* ((canvasSize/50)/12),
     
     leftClawPosition: {
-        relative: {x: -10, y: -20},
+        relative: {x: -30* ((canvasSize/50)/12), y: 20* ((canvasSize/50)/12)},
         absolute: {x: 0, y: 0},
-        snapY: -20,
+        snapY: 25* ((canvasSize/50)/12),
         stepping: true,
     },
     rightClawPosition: {
-        relative: {x: -10, y: 20},
+        relative: {x: 0* ((canvasSize/50)/12), y: -20* ((canvasSize/50)/12)},
         absolute: {x: 0, y: 0},
-        snapY: 20,
+        snapY: -25* ((canvasSize/50)/12),
         stepping: false,
     },
     leftFootPosition: {
-        relative: {x: -10, y: -20},
+        relative: {x: 10* ((canvasSize/50)/12), y: 10* ((canvasSize/50)/12)},
         absolute: {x: 0, y: 0},
-        snapY: -20,
+        snapY: 10* ((canvasSize/50)/12),
         stepping: true,
     },
     rightFootPosition: {
-        relative: {x: -10, y: 20},
+        relative: {x: -10* ((canvasSize/50)/12), y: -10* ((canvasSize/50)/12)},
         absolute: {x: 0, y: 0},
-        snapY: 20,
+        snapY: -10* ((canvasSize/50)/12),
         stepping: false,
     },
     
@@ -442,18 +442,22 @@ const dragon = {
         initializeLimb(this.rightFootPosition, this.hipPosition, this.hipAngle);
     },
     
-    fixLimb(limb, anchor, angle, opposite, maxStretch) {
+    fixLimb(limb, anchor, angle, opposite, maxStretch, xOffset=0) {
         // emergency reset!
         if (
             (cartesianDistance(limb.absolute.x, limb.absolute.y, anchor.x, anchor.y) > (maxStretch*2)) & 
             (cartesianDistance(opposite.absolute.x, opposite.absolute.y, anchor.x, anchor.y) > (maxStretch*2))
         ) {
             console.log("emergency limb fix");
-            limb.relative.x = 0;
+            limb.relative.x = 0+xOffset;
             opposite.relative.x = 0;
         }
+        // if limb has crossed over body
+        if ((limb.relative.y * limb.snapY) < 0) {
+            limb.relative.y += (limb.snapY-limb.relative.y) * (Date.now() - this.limbClock) * (this.limbSpeedY/1000);
+        }
         if (limb.stepping) {
-            limb.relative.x = -opposite.relative.x;
+            limb.relative.x = (-opposite.relative.x) + xOffset;
             if (limb.relative.y != limb.snapY) {
                 limb.relative.y += (limb.snapY-limb.relative.y) * (Date.now() - this.limbClock) * (this.limbSpeedY/1000);
             }
@@ -465,7 +469,11 @@ const dragon = {
                 anchor.y,
                 angle
             );
-            if (cartesianDistance(limb.absolute.x, limb.absolute.y, anchor.x, anchor.y) > maxStretch) {
+//            if (cartesianDistance(limb.absolute.x, limb.absolute.y, anchor.x, anchor.y) > maxStretch) {
+//                limb.stepping = !limb.stepping;
+//                opposite.stepping = !opposite.stepping;
+//            }
+            if (limb.relative.x > (maxStretch+xOffset)) {
                 limb.stepping = !limb.stepping;
                 opposite.stepping = !opposite.stepping;
             }
@@ -480,32 +488,178 @@ const dragon = {
     },
     
     updateLimbs() {
-        this.fixLimb(this.leftClawPosition, this.neckPosition, this.rotation, this.rightClawPosition, this.maxClawStretch);
-        this.fixLimb(this.rightClawPosition, this.neckPosition, this.rotation, this.leftClawPosition, this.maxClawStretch);
+        this.fixLimb(this.leftClawPosition, this.neckPosition, this.rotation, this.rightClawPosition, this.maxClawStretch, -20);
+        this.fixLimb(this.rightClawPosition, this.neckPosition, this.rotation, this.leftClawPosition, this.maxClawStretch, -20);
         this.fixLimb(this.leftFootPosition, this.hipPosition, this.hipAngle, this.rightFootPosition, this.maxFootStretch);
         this.fixLimb(this.rightFootPosition, this.hipPosition, this.hipAngle, this.leftFootPosition, this.maxFootStretch);
         
         this.limbClock = Date.now();
     },
     
-    drawLimb(limb, anchor, angle) {
-//        context.beginPath();
-//        context.moveTo(anchor.x, anchor.y);
-//        context.lineTo(limb.absolute.x, limb.absolute.y);
-//        context.stroke();
+    drawLimb(limb, anchor, angle, xOffset=0) {
         var extremity_text = "\u25B4";
         var text_size = context.measureText(extremity_text).width;
         context.fillStyle = this.color;
         context.save();
-        context.translate(limb.absolute.x, limb.absolute.y);
+        if (xOffset==0) {
+            var limb_position = {x: limb.absolute.x+xOffset, y: limb.absolute.y};
+        } else {
+            var limb_position = xyRelativeToAbsolute(limb.relative.x + xOffset, limb.relative.y, anchor.x, anchor.y, angle);
+        }
+        context.translate(limb_position.x, limb_position.y);
         context.rotate(-angle - (Math.PI/2));
         context.fillText(extremity_text, -1*(text_size/2), text_size/2);
         context.restore();
     },
     
+    leftElbowPosition: {
+        relative: {x: 0, y: 0},
+        absolute: {x: 0, y: 0},
+    },
+    
+    rightElbowPosition: {
+        relative: {x: 0, y: 0},
+        absolute: {x: 0, y: 0},
+    },
+    
+    drawLeftArm() {
+        var boneLength = this.maxClawStretch / 2;
+        var psi = getAngleBetweenPoints(0,0, this.leftClawPosition.relative.x, this.leftClawPosition.relative.y);
+        var l = cartesianDistance(this.neckPosition.x, this.neckPosition.y, this.leftClawPosition.absolute.x, this.leftClawPosition.absolute.y);
+        var phi = Math.acos(((l/2)/20));
+        var elbowpos = {x: Math.cos(psi-phi)*boneLength, y: Math.sin(psi-phi)*boneLength};
+        this.leftElbowPosition.relative = {x:elbowpos.x, y: elbowpos.y};
+        elbowpos = xyRelativeToAbsolute(elbowpos.x, elbowpos.y, this.neckPosition.x, this.neckPosition.y, this.rotation);
+        if (isNaN(elbowpos.x) | isNaN(elbowpos.y)) {
+            elbowpos.x = ((this.neckPosition.x + this.leftClawPosition.absolute.x)/2);
+            elbowpos.y = ((this.neckPosition.y + this.leftClawPosition.absolute.y)/2);
+        }
+        this.leftElbowPosition.absolute = {x:elbowpos.x, y: elbowpos.y};
+        context.beginPath();
+        context.moveTo(this.neckPosition.x, this.neckPosition.y);
+        context.lineTo(elbowpos.x, elbowpos.y);
+        context.lineTo(this.leftClawPosition.absolute.x, this.leftClawPosition.absolute.y);
+        context.stroke();
+    },
+    
+    drawRightArm() {
+        var boneLength = this.maxClawStretch / 2;
+        var psi = getAngleBetweenPoints(0,0, this.rightClawPosition.relative.x, this.rightClawPosition.relative.y);
+        var l = cartesianDistance(this.neckPosition.x, this.neckPosition.y, this.rightClawPosition.absolute.x, this.rightClawPosition.absolute.y);
+        var phi = Math.acos(((l/2)/20));
+        var elbowpos = {x: Math.cos(psi+phi)*boneLength, y: Math.sin(psi+phi)*boneLength};
+        this.rightElbowPosition.relative = {x:elbowpos.x, y: elbowpos.y};
+        elbowpos = xyRelativeToAbsolute(elbowpos.x, elbowpos.y, this.neckPosition.x, this.neckPosition.y, this.rotation);
+        if (isNaN(elbowpos.x) | isNaN(elbowpos.y)) {
+            elbowpos.x = ((this.neckPosition.x + this.rightClawPosition.absolute.x)/2);
+            elbowpos.y = ((this.neckPosition.y + this.rightClawPosition.absolute.y)/2);
+        }
+        this.rightElbowPosition.absolute = {x:elbowpos.x, y: elbowpos.y};
+        context.beginPath();
+        context.moveTo(this.neckPosition.x, this.neckPosition.y);
+        context.lineTo(elbowpos.x, elbowpos.y);
+        context.lineTo(this.rightClawPosition.absolute.x, this.rightClawPosition.absolute.y);
+        context.stroke();
+    },
+    
+    drawLeftLeg() {
+        var boneLength = this.maxFootStretch * (4/3);
+        var leftKneePosition = {x: (0.5*this.leftFootPosition.relative.x) - (boneLength/2), y: this.leftFootPosition.relative.y/2};
+        var leftHeelPosition = {x: (0.5*this.leftFootPosition.relative.x) + (boneLength/2), y: this.leftFootPosition.relative.y/2};
+        leftKneePosition = xyRelativeToAbsolute(leftKneePosition.x, leftKneePosition.y, this.hipPosition.x, this.hipPosition.y, this.hipAngle);
+        leftHeelPosition = xyRelativeToAbsolute(leftHeelPosition.x, leftHeelPosition.y, this.hipPosition.x, this.hipPosition.y, this.hipAngle);
+        context.beginPath();
+        context.moveTo(this.hipPosition.x, this.hipPosition.y);
+        context.lineTo(leftKneePosition.x, leftKneePosition.y);
+        context.lineTo(leftHeelPosition.x, leftHeelPosition.y);
+        context.lineTo(this.leftFootPosition.absolute.x, this.leftFootPosition.absolute.y);
+        context.stroke();
+    },
+    
+    drawRightLeg() {
+        var boneLength = this.maxFootStretch*(4/3);
+        var rightKneePosition = {x: (0.5*this.rightFootPosition.relative.x) - (boneLength/2), y: this.rightFootPosition.relative.y/2};
+        var rightHeelPosition = {x: (0.5*this.rightFootPosition.relative.x) + (boneLength/2), y: this.rightFootPosition.relative.y/2};
+        rightKneePosition = xyRelativeToAbsolute(rightKneePosition.x, rightKneePosition.y, this.hipPosition.x, this.hipPosition.y, this.hipAngle);
+        rightHeelPosition = xyRelativeToAbsolute(rightHeelPosition.x, rightHeelPosition.y, this.hipPosition.x, this.hipPosition.y, this.hipAngle);
+        context.beginPath();
+        context.moveTo(this.hipPosition.x, this.hipPosition.y);
+        context.lineTo(rightKneePosition.x, rightKneePosition.y);
+        context.lineTo(rightHeelPosition.x, rightHeelPosition.y);
+        context.lineTo(this.rightFootPosition.absolute.x, this.rightFootPosition.absolute.y);
+        context.stroke();
+    },
+    
+    drawLeftWing(wingLength) {
+        wingLength *= this.spineLength;
+        var maxTipAngle = (1*Math.PI)/4;
+        var angleElbowToWingTip = 
+            ((2*Math.PI) - getAngleBetweenPoints(
+                this.leftClawPosition.relative.x, 
+                this.leftClawPosition.relative.y, 
+                this.leftElbowPosition.relative.x, 
+                this.leftElbowPosition.relative.y)
+            ) + maxTipAngle;
+        if (angleElbowToWingTip > (Math.PI * 2)) {
+            angleElbowToWingTip -= (Math.PI * 2);
+        }
+        var innerAngles = angleElbowToWingTip / 5;
+        var fingerProportions = [0.8, 1.0, 0.8, 0.6];
+        for (var i = 0; i <4; i++) {
+            var tipAngle = maxTipAngle - (innerAngles * i);
+            var fingerLength = wingLength * fingerProportions[i];
+            wingTipRelativeX = this.leftClawPosition.relative.x + (fingerLength) * Math.cos(tipAngle);
+            wingTipRelativeY = this.leftClawPosition.relative.y + (fingerLength) * Math.sin(tipAngle);
+            wingTipAbsolute = xyRelativeToAbsolute(wingTipRelativeX, wingTipRelativeY, this.neckPosition.x, this.neckPosition.y, this.rotation);
+
+            context.beginPath();
+            context.moveTo(this.leftClawPosition.absolute.x, this.leftClawPosition.absolute.y);
+            context.lineTo(wingTipAbsolute.x, wingTipAbsolute.y);
+            context.stroke();
+        }
+    },
+    
+    drawRightWing(wingLength) {
+        wingLength *= this.spineLength;
+        var maxTipAngle = (7*Math.PI)/4;
+        var angleElbowToWingTip = 
+            (getAngleBetweenPoints(
+                this.rightClawPosition.relative.x, 
+                this.rightClawPosition.relative.y, 
+                this.rightElbowPosition.relative.x, 
+                this.rightElbowPosition.relative.y)
+            ) + maxTipAngle - (3*Math.PI/2);
+        console.log(angleElbowToWingTip)
+        if (angleElbowToWingTip > (Math.PI * 2)) {
+            angleElbowToWingTip -= (Math.PI * 2);
+        }
+        var innerAngles = angleElbowToWingTip / 5;
+        var fingerProportions = [0.8, 1.0, 0.8, 0.6];
+        for (var i = 0; i <4; i++) {
+            var tipAngle = maxTipAngle + (innerAngles * i);
+            var fingerLength = wingLength * fingerProportions[i];
+            wingTipRelativeX = this.rightClawPosition.relative.x + (fingerLength) * Math.cos(tipAngle);
+            wingTipRelativeY = this.rightClawPosition.relative.y + (fingerLength) * Math.sin(tipAngle);
+            wingTipAbsolute = xyRelativeToAbsolute(wingTipRelativeX, wingTipRelativeY, this.neckPosition.x, this.neckPosition.y, this.rotation);
+
+            context.beginPath();
+            context.moveTo(this.rightClawPosition.absolute.x, this.rightClawPosition.absolute.y);
+            context.lineTo(wingTipAbsolute.x, wingTipAbsolute.y);
+            context.stroke();
+        }
+    },
+    
     drawLimbs() {
-        this.drawLimb(this.leftClawPosition, this.neckPosition, this.rotation);
-        this.drawLimb(this.rightClawPosition, this.neckPosition, this.rotation);
+        this.drawLeftArm();
+        this.drawRightArm();
+        this.drawLeftLeg();
+        this.drawRightLeg();
+        
+        this.drawLeftWing(1.3);
+        this.drawRightWing(1.3);
+        
+        this.drawLimb(this.leftClawPosition, this.neckPosition, this.rotation, 0);
+        this.drawLimb(this.rightClawPosition, this.neckPosition, this.rotation, 0);
         this.drawLimb(this.leftFootPosition, this.hipPosition, this.rotation);
         this.drawLimb(this.rightFootPosition, this.hipPosition, this.rotation);
     },
@@ -660,6 +814,8 @@ const dragon = {
         this.fire.updateParticles();
         this.drawHead();
         this.time = Date.now();
+        
+        
     },
 };
 
@@ -671,6 +827,8 @@ dragon.hipPosition.x = dragon.neckPosition.x + dragon.spineLength;
 dragon.hipPosition.y = dragon.neckPosition.y;
 dragon.fire.currentFireTank = dragon.fire.maxFireTank;
 dragon.initializeLimbs();
+dragon.maxClawStretch = dragon.maxClawStretch * (dragon.scale/12);
+dragon.maxFootStretch = dragon.maxFootStretch * (dragon.scale/12);
 
 
 function cartesianDistance(x1, y1, x2, y2) {
@@ -722,6 +880,10 @@ function xyAbsoluteToRelative(absolute_x, absolute_y, center_x, center_y, angle)
     var relative_y = (Math.sin(angle) * shifted_x) + (Math.cos(angle) * shifted_y);
 
     return { x: relative_x, y: relative_y };
+}
+
+function findIsoscelesKnee(extremityX, extremityY, boneLength) {
+    1;
 }
 
 function isKeyDown(key) {
