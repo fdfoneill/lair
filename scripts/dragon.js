@@ -1,5 +1,14 @@
 var showGuides = document.getElementById("showGuides");
 
+var slider = document.getElementById("hordeSize");
+var output = document.getElementById("sliderLabel");
+output.innerHTML = "Horde size: " + slider.value; // Display the default slider value
+
+// Update the current slider value (each time you drag the slider handle)
+slider.oninput = function() {
+  output.innerHTML = "Horde size: " + this.value;
+}
+
 const canvas = document.getElementById("lairCanvas");
 const context = canvas.getContext("2d");
 const rect = canvas.getBoundingClientRect();
@@ -960,11 +969,7 @@ document.addEventListener('keydown', function(event) {
     if (event.key == "s") {
         var entranceName = choose(["top", "bottom", "left", "right"]);
         var entrance = edges.get(entranceName);
-        interlopers.interloperList.push(interlopers.newInterloper(entrance.x, entrance.y, entrance.angle + ((Math.random()-0.5) * Math.PI / 1.5)));
-    } else if (event.key == "a") {
-        var entranceName = choose(["top", "bottom", "left", "right"]);
-        var entrance = edges.get(entranceName);
-        for (var i = 0; i < 5; i++) {
+        for (var i = 0; i < slider.value; i++) {
             interlopers.interloperList.push(interlopers.newInterloper(entrance.x, entrance.y, entrance.angle + ((Math.random()-0.5) * Math.PI / 1.5)));
         }
     }
