@@ -629,7 +629,6 @@ const dragon = {
                 this.rightElbowPosition.relative.x, 
                 this.rightElbowPosition.relative.y)
             ) + maxTipAngle - (3*Math.PI/2);
-        console.log(angleElbowToWingTip)
         if (angleElbowToWingTip > (Math.PI * 2)) {
             angleElbowToWingTip -= (Math.PI * 2);
         }
@@ -650,6 +649,7 @@ const dragon = {
     },
     
     drawLimbs() {
+        context.strokeStyle = this.color;
         this.drawLeftArm();
         this.drawRightArm();
         this.drawLeftLeg();
