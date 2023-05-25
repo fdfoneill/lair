@@ -13,9 +13,16 @@ canvas.height = canvasSize;
 var cursorPosition = {x: 0, y: 0};
 
 canvas.addEventListener("mousemove", (event) => {
-    cursorPosition.x = event.clientX - rect.left;;
-    cursorPosition.y = event.clientY - rect.top;;
+    cursorPosition.x = event.clientX - rect.left;
+    cursorPosition.y = event.clientY - rect.top;
 });
+
+const edges = new Map([
+    ["top", {x: (canvasSize/2), y: 1, angle: Math.PI/2}],
+    ["bottom", {x: (canvasSize/2), y: canvasSize-1, angle: 3*Math.PI/2}],
+    ["left", {x: 1, y: rect.top + (canvasSize/2), angle:0}],
+    ["right", {x: canvasSize-1, y: (canvasSize/2), angle: Math.PI}],
+]);
 
 const dragon = {
     rotation: 0,
@@ -30,8 +37,10 @@ const dragon = {
     minHeadAngle: (2/5) * Math.PI,
     maxHeadTurn: (1/5) * Math.PI,
     headPosition: {x: 0, y: 0},
+    headText: "\u2665", // heart inverted
     headTurnSpeed: 3,
     neckControlPoint: {x: 0, y: 0},
+    headDamage: 100,
     
     spinePivotPoint: {x: 0, y: 0},
     spineLength: 20,
@@ -54,6 +63,7 @@ const dragon = {
     fireSpread: 0.3,
     fireSymbol: ".",
     fireColor: "red",
+    fireDamage: 5,
     
     angleToAbsolute(relative_angle, negative=false) {
         if (negative) {
@@ -106,12 +116,6 @@ const dragon = {
     },
     
     drawHead() {
-        var headText = "A";
-        headText = "\u2660"; // spade
-//        headText = "\u25B2"; // triangle solid
-//        headText = "\u23CF"; // eject
-//        headText = "\u2206"; // triangle hollow
-        headText = "\u2665"; // heart inverted
         var head_text_rotation_offset = Math.PI;
         context.font = (28*(this.scale/20)) + "px Georgia";
         context.fillStyle = this.color;
@@ -134,8 +138,8 @@ const dragon = {
             head_rotation - 
             (Math.PI/2);
         context.rotate(head_rotation+head_text_rotation_offset);
-        var text_size = context.measureText(headText).width;
-        context.fillText(headText, -1*(text_size/2), text_size/2);
+        var text_size = context.measureText(this.headText).width;
+        context.fillText(this.headText, -1*(text_size/2), text_size/2);
         // eyes
 //        var eyeText = ":";
 //        context.font = (28*(this.scale/40)) + "px Georgia";
@@ -819,7 +823,7 @@ const dragon = {
     },
 };
 
-//initial setup
+//initial setup of dragon
 dragon.headCursorDistanceTolerance = dragon.scale/2;
 dragon.spineLength = dragon.scale * 8;
 dragon.tailLength = dragon.scale * 6;
@@ -830,6 +834,131 @@ dragon.initializeLimbs();
 dragon.maxClawStretch = dragon.maxClawStretch * (dragon.scale/12);
 dragon.maxFootStretch = dragon.maxFootStretch * (dragon.scale/12);
 
+
+var interlopersKilled = 0;
+var goldStolen = 0;
+
+const interlopers = {
+    interloperList: [],
+    symbol: "\u26A8",
+    color: "green",
+    interloperClock: Date.now(),
+    
+    newInterloper(x, y, facing, speed=50, zigzag=5, hp=10, symbol=this.symbol, color=this.color) {
+        var new_interloper = {
+            x: x,
+            y: y,
+            facing: facing,
+            speed: speed,
+            hp: hp,
+            symbol: symbol,
+            color: color,
+            
+            lifeTime: 0,
+            dead: false,
+            
+            update() {
+                // get distance to dragon head
+                var distanceToDragonHead = cartesianDistance(this.x, this.y, dragon.headPosition.x, dragon.headPosition.y);
+                var angleToDragonHead = (
+                    getAngleBetweenPoints(this.x, this.y, dragon.headPosition.x, dragon.headPosition.y) + 
+                    this.facing -
+                    Math.PI
+                );
+                //adjust facing
+                this.facing += (
+                    (
+                        ((Math.random() * zigzag) - (zigzag/2))
+                        - ((Math.cos(angleToDragonHead)/((distanceToDragonHead/100)**2)) * (Math.PI/2)) // don't walk into the dragon's mouth!
+                    )
+                    * ((Date.now() - interlopers.interloperClock)/1000)
+                );
+                // adjust position
+                this.x += Math.cos(this.facing) * (((Date.now() - interlopers.interloperClock)/1000)* this.speed);
+                this.y += Math.sin(this.facing) * (((Date.now() - interlopers.interloperClock)/1000) * this.speed);
+                // adjust HP
+                if (distanceToDragonHead < (context.measureText(this.symbol).width)
+                   ) {
+                    this.hp -= dragon.headDamage * ((Date.now() - interlopers.interloperClock)/1000);
+                }
+                for (var i = 0; i < dragon.fire.particles.length; i++) {
+                    if (
+                        cartesianDistance(
+                            this.x, this.y, dragon.fire.particles[i].location.x, dragon.fire.particles[i].location.y
+                        ) < (context.measureText(this.symbol).width)
+                       ) {
+                        this.hp -= dragon.fireDamage * ((Date.now() - interlopers.interloperClock)/1000);
+                    }
+                }
+                // check for kill
+                if (this.hp <= 0) {
+                    this.dead = true;
+                    interlopersKilled ++;
+                }
+                // check for out-of-bounds
+                if ((this.x > canvasSize) | (this.x < 0) | (this.y > canvasSize) | (this.y < 0)) {
+                    this.dead = true;
+                    goldStolen += this.lifeTime;
+                }
+                this.lifeTime += (Date.now() - interlopers.interloperClock)/1000;
+            },
+            
+            draw() {
+                context.save();
+                var symbolWidth = context.measureText(this.symbol).width;
+                context.translate(this.x, this.y);
+                context.rotate(this.facing+Math.PI/2);
+                context.fillStyle = this.color;
+                context.font = (28*(this.scale/20)) + "px Georgia";
+                context.fillText(this.symbol, -1*(symbolWidth/2), symbolWidth/2);
+                context.restore();
+            },
+        };
+        return new_interloper;
+    },
+    
+    drawCounts() {
+        var killText = "Interlopers Killed: " + interlopersKilled;
+        var killTextWidth = context.measureText(killText).width;
+        context.save();
+        context.fillStyle = "black";
+        context.translate(canvasSize - (killTextWidth+5), 15);
+        context.fillText(killText, 0, 0)
+        context.restore();
+        
+        var goldText = "Gold Stolen: " + Math.floor(goldStolen) + "gp";
+        var goldTextWidth = context.measureText(goldText).width;
+        context.save();
+        context.fillStyle = "black";
+        context.translate(canvasSize - (goldTextWidth+5), 40);
+        context.fillText(goldText, 0, 0)
+        context.restore();
+    },
+    
+    update() {
+        for (var i = 0; i < this.interloperList.length; i++) {
+            this.interloperList[i].update();
+            this.interloperList[i].draw();
+        }
+        // remove dead interlopers
+        this.interloperList = this.interloperList.filter(obj => !obj.dead);
+        // draw kill count
+        this.drawCounts();
+        this.interloperClock = Date.now();
+    },
+};
+
+//initial setup of interlopers
+
+// interloper trigger 
+document.addEventListener('keydown', function(event) {
+    if (event.key == "i") {
+        var entranceName = choose(["top", "bottom", "left", "right"]);
+        var entrance = edges.get(entranceName)
+        console.log(entranceName);
+        interlopers.interloperList.push(interlopers.newInterloper(entrance.x, entrance.y, entrance.angle + ((Math.random()-0.5) * Math.PI)));
+    }
+});
 
 function cartesianDistance(x1, y1, x2, y2) {
     return Math.sqrt(((x1-x2)**2) + ((y1-y2)**2))
@@ -886,6 +1015,11 @@ function findIsoscelesKnee(extremityX, extremityY, boneLength) {
     1;
 }
 
+function choose(choices) {
+  var index = Math.floor(Math.random() * choices.length);
+  return choices[index];
+}
+
 function isKeyDown(key) {
   return keyState[key] === true;
 }
@@ -914,6 +1048,7 @@ document.addEventListener('mouseup', function(event) {
 function render() {
     context.clearRect(0, 0, canvas.width, canvas.height);
     dragon.update();
+    interlopers.update();
     
     // Loop the rendering
     requestAnimationFrame(render);
