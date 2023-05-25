@@ -840,11 +840,13 @@ var goldStolen = 0;
 
 const interlopers = {
     interloperList: [],
-    symbol: "\u26A8",
+    //symbol: "\u26A8",
+    symbol: "\u2376",
+    symbolRotation: -Math.PI/2,
     color: "green",
     interloperClock: Date.now(),
     
-    newInterloper(x, y, facing, speed=50, zigzag=5, hp=10, symbol=this.symbol, color=this.color) {
+    newInterloper(x, y, facing, speed=50, zigzag=5, hp=10, symbol=this.symbol, symbolRotation=this.symbolRotation, color=this.color) {
         var new_interloper = {
             x: x,
             y: y,
@@ -852,6 +854,7 @@ const interlopers = {
             speed: speed,
             hp: hp,
             symbol: symbol,
+            symbolRotation: symbolRotation,
             color: color,
             
             lifeTime: 0,
@@ -907,7 +910,7 @@ const interlopers = {
                 context.save();
                 var symbolWidth = context.measureText(this.symbol).width;
                 context.translate(this.x, this.y);
-                context.rotate(this.facing+Math.PI/2);
+                context.rotate(this.facing+Math.PI/2 + this.symbolRotation);
                 context.fillStyle = this.color;
                 context.font = (28*(this.scale/20)) + "px Georgia";
                 context.fillText(this.symbol, -1*(symbolWidth/2), symbolWidth/2);
