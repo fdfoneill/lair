@@ -603,6 +603,12 @@ const dragon = {
         context.stroke();
     },
     
+    wingAngleOffset: 0,
+    
+    flexWings() {
+        this.wingAngleOffset = (Math.sin(Date.now() / 1500) - 1) * (Math.PI/100);
+    },
+    
     drawLeftWing(wingLength) {
         wingLength *= this.spineLength;
         var maxTipAngle = (1*Math.PI)/4;
@@ -616,7 +622,7 @@ const dragon = {
         if (angleElbowToWingTip > (Math.PI * 2)) {
             angleElbowToWingTip -= (Math.PI * 2);
         }
-        var innerAngles = angleElbowToWingTip / 5;
+        var innerAngles = (angleElbowToWingTip / 5) + this.wingAngleOffset;
         var fingerProportions = [0.8, 1.0, 0.8, 0.6];
         for (var i = 0; i <4; i++) {
             var tipAngle = maxTipAngle - (innerAngles * i);
@@ -645,7 +651,7 @@ const dragon = {
         if (angleElbowToWingTip > (Math.PI * 2)) {
             angleElbowToWingTip -= (Math.PI * 2);
         }
-        var innerAngles = angleElbowToWingTip / 5;
+        var innerAngles = (angleElbowToWingTip / 5) + this.wingAngleOffset;
         var fingerProportions = [0.8, 1.0, 0.8, 0.6];
         for (var i = 0; i <4; i++) {
             var tipAngle = maxTipAngle + (innerAngles * i);
@@ -816,6 +822,7 @@ const dragon = {
         this.spinePivotPoint = this.getSpinePivotPoint(show);
         this.tailPivotPoint = this.getTailPivotPoint(show);
         this.tailPosition = this.swishTail();
+        this.flexWings();
         this.updateLimbs();
         
         this.drawLimbs();
