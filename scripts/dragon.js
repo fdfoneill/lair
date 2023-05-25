@@ -960,12 +960,12 @@ document.addEventListener('keydown', function(event) {
     if (event.key == "s") {
         var entranceName = choose(["top", "bottom", "left", "right"]);
         var entrance = edges.get(entranceName);
-        interlopers.interloperList.push(interlopers.newInterloper(entrance.x, entrance.y, entrance.angle + ((Math.random()-0.3) * Math.PI)));
+        interlopers.interloperList.push(interlopers.newInterloper(entrance.x, entrance.y, entrance.angle + ((Math.random()-0.5) * Math.PI / 1.5)));
     } else if (event.key == "a") {
         var entranceName = choose(["top", "bottom", "left", "right"]);
         var entrance = edges.get(entranceName);
         for (var i = 0; i < 5; i++) {
-            interlopers.interloperList.push(interlopers.newInterloper(entrance.x, entrance.y, entrance.angle + ((Math.random()-0.3) * Math.PI)));
+            interlopers.interloperList.push(interlopers.newInterloper(entrance.x, entrance.y, entrance.angle + ((Math.random()-0.5) * Math.PI / 1.5)));
         }
     }
 });
