@@ -400,7 +400,7 @@ const dragon = {
     
     // limbs
     maxClawStretch: 30* ((canvasSize/50)/12),
-    maxFootStretch: 20* ((canvasSize/50)/12),
+    maxFootStretch: 25* ((canvasSize/50)/12),
     
     limbClock: Date.now(),
     limbSpeedY: 10* ((canvasSize/50)/12),
