@@ -26,7 +26,7 @@ canvas.addEventListener("mousemove", (event) => {
     cursorPosition.y = event.clientY - rect.top;
 });
 
-const edges = new Map([
+const entrances = new Map([
     ["top", {x: (canvasSize/2), y: 1, angle: Math.PI/2}],
     ["bottom", {x: (canvasSize/2), y: canvasSize-1, angle: 3*Math.PI/2}],
     ["left", {x: 1, y: rect.top + (canvasSize/2), angle:0}],
@@ -859,10 +859,9 @@ const interlopers = {
     //symbol: "\u26A8",
     symbol: "\u2376",
     symbolRotation: -Math.PI/2,
-    color: "#339665",
     interloperClock: Date.now(),
     
-    newInterloper(x, y, facing, speed=50, zigzag=5, hp=10, symbol=this.symbol, symbolRotation=this.symbolRotation, color=this.color) {
+    newInterloper(x, y, facing, speed=50, zigzag=5, hp=10, symbol=this.symbol, symbolRotation=this.symbolRotation, scale=1) {
         var new_interloper = {
             x: x,
             y: y,
@@ -871,7 +870,8 @@ const interlopers = {
             hp: hp,
             symbol: symbol,
             symbolRotation: symbolRotation,
-            color: color,
+            scale: scale,
+            color: null,
             
             lifeTime: 0,
             dead: false,
@@ -910,7 +910,15 @@ const interlopers = {
                     }
                 }
                 //adjust color
-                //if (this.hp <)
+                if (this.hp <= 5) {
+                    this.color = "#e06666";
+                } else if (this.hp <= 10) {
+                    this.color = "#a1e066";
+                } else if (this.hp <= 20) {
+                    this.color = "#2c9caf"
+                } else {
+                    this.color = "#c066e0";
+                }
                 // check for kill
                 if (this.hp <= 0) {
                     this.dead = true;
@@ -930,12 +938,21 @@ const interlopers = {
                 context.translate(this.x, this.y);
                 context.rotate(this.facing+Math.PI/2 + this.symbolRotation);
                 context.fillStyle = this.color;
-                context.font = (28*(this.scale/20)) + "px Georgia";
+                context.font = (28*(this.scale/1.5)) + "px Georgia";
                 context.fillText(this.symbol, -1*(symbolWidth/2), symbolWidth/2);
                 context.restore();
             },
         };
         return new_interloper;
+    },
+    
+    newKnight(x, y, facing) {
+        var knightHP = 30;
+        var knightSpeed = 30;
+        var knightSymbol = "\u2391";
+        var knightSymbolRotation = this.symbolRotation;
+        var knightScale = 1.2;
+        return this.newInterloper(x, y, facing, knightSpeed, 5, knightHP, knightSymbol, knightSymbolRotation, knightScale);
     },
     
     drawCounts() {
@@ -973,14 +990,29 @@ const interlopers = {
 
 // interloper trigger 
 document.addEventListener('keydown', function(event) {
+    var entranceName = choose(Array.from(entrances.keys())); // randomly pick an entrance
+    var entrance = entrances.get(entranceName);
     if (event.key == "s") {
-        var entranceName = choose(["top", "bottom", "left", "right"]);
-        var entrance = edges.get(entranceName);
         for (var i = 0; i < slider.value; i++) {
             interlopers.interloperList.push(interlopers.newInterloper(entrance.x, entrance.y, entrance.angle + ((Math.random()-0.5) * Math.PI / 1.5)));
         }
+    } else if (event.key == "a") {
+        interlopers.interloperList.push(interlopers.newKnight(entrance.x, entrance.y, entrance.angle + ((Math.random()-0.5) * Math.PI / 1.5)));
     }
 });
+
+function distanceToNearestEntrance(x, y) {
+    var entranceNames = Array.from(entrances.keys());
+    var min_distance = Infinity;
+    for (var i = 0; i < entranceNames.length; i++) {
+        entrance = entrances.get(entranceNames[i]);
+        min_distance = Math.min(
+            cartesianDistance(x, y, entrance.x, entrance.y),
+            min_distance
+        );
+    }
+    return min_distance;
+}
 
 function cartesianDistance(x1, y1, x2, y2) {
     return Math.sqrt(((x1-x2)**2) + ((y1-y2)**2))
