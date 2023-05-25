@@ -812,9 +812,9 @@ const dragon = {
         this.drawLimbs();
         this.drawTail(show);
         this.drawSpine(show);
-        this.drawHips();
+        //this.drawHips();
         this.drawNeck();
-        this.drawShoulders();
+        //this.drawShoulders();
         this.fire.updateParticles();
         this.drawHead();
         this.time = Date.now();
