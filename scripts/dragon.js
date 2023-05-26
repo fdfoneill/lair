@@ -42,6 +42,8 @@ const dragon = {
     rotation: 0,
     scale: canvasSize/50,
     color: "#0033cc",
+    membraneColor: "#8ca7fa",
+    membraneAlpha: 0.5,
     time: Date.now(),
     
     directionHeadToCursor: 0,
@@ -511,6 +513,9 @@ const dragon = {
         this.fixLimb(this.leftFootPosition, this.hipPosition, this.hipAngle, this.rightFootPosition, this.maxFootStretch);
         this.fixLimb(this.rightFootPosition, this.hipPosition, this.hipAngle, this.leftFootPosition, this.maxFootStretch);
         
+        this.updateLeftWing(1.3);
+        this.updateRightWing(1.3);
+        
         this.limbClock = Date.now();
     },
     
@@ -614,7 +619,11 @@ const dragon = {
         this.wingAngleOffset = (Math.sin(Date.now() / 1500) - 1) * (Math.PI/100);
     },
     
-    drawLeftWing(wingLength) {
+    // finger positions ordered outer to innner, all absolute positions
+    leftFingerPositions: [],
+    rightFingerPositions: [],
+    
+    updateLeftWing(wingLength) {
         wingLength *= this.spineLength;
         var maxTipAngle = (1*Math.PI)/4;
         var angleElbowToWingTip = 
@@ -629,21 +638,18 @@ const dragon = {
         }
         var innerAngles = (angleElbowToWingTip / 5) + this.wingAngleOffset;
         var fingerProportions = [0.8, 1.0, 0.8, 0.6];
+        this.leftFingerPositions = [];
         for (var i = 0; i <4; i++) {
             var tipAngle = maxTipAngle - (innerAngles * i);
             var fingerLength = wingLength * fingerProportions[i];
             wingTipRelativeX = this.leftClawPosition.relative.x + (fingerLength) * Math.cos(tipAngle);
             wingTipRelativeY = this.leftClawPosition.relative.y + (fingerLength) * Math.sin(tipAngle);
             wingTipAbsolute = xyRelativeToAbsolute(wingTipRelativeX, wingTipRelativeY, this.neckPosition.x, this.neckPosition.y, this.rotation);
-
-            context.beginPath();
-            context.moveTo(this.leftClawPosition.absolute.x, this.leftClawPosition.absolute.y);
-            context.lineTo(wingTipAbsolute.x, wingTipAbsolute.y);
-            context.stroke();
+            this.leftFingerPositions.push({x: wingTipAbsolute.x, y: wingTipAbsolute.y});
         }
     },
     
-    drawRightWing(wingLength) {
+    updateRightWing(wingLength) {
         wingLength *= this.spineLength;
         var maxTipAngle = (7*Math.PI)/4;
         var angleElbowToWingTip = 
@@ -658,18 +664,118 @@ const dragon = {
         }
         var innerAngles = (angleElbowToWingTip / 5) + this.wingAngleOffset;
         var fingerProportions = [0.8, 1.0, 0.8, 0.6];
+        this.rightFingerPositions = [];
         for (var i = 0; i <4; i++) {
             var tipAngle = maxTipAngle + (innerAngles * i);
             var fingerLength = wingLength * fingerProportions[i];
             wingTipRelativeX = this.rightClawPosition.relative.x + (fingerLength) * Math.cos(tipAngle);
             wingTipRelativeY = this.rightClawPosition.relative.y + (fingerLength) * Math.sin(tipAngle);
             wingTipAbsolute = xyRelativeToAbsolute(wingTipRelativeX, wingTipRelativeY, this.neckPosition.x, this.neckPosition.y, this.rotation);
+            this.rightFingerPositions.push({x: wingTipAbsolute.x, y: wingTipAbsolute.y});
+        }
+    },
+    
+    drawLeftWing() {
+//        if (this.leftFingerPositions.length < 1) {
+//            return;
+//        }
+        for (var i = 0; i <this.leftFingerPositions.length; i++) {
+            var wingTipAbsolute = {x: this.leftFingerPositions[i].x, y: this.leftFingerPositions[i].y};
 
+            context.beginPath();
+            context.moveTo(this.leftClawPosition.absolute.x, this.leftClawPosition.absolute.y);
+            context.lineTo(wingTipAbsolute.x, wingTipAbsolute.y);
+            context.stroke();
+        }
+    },
+    
+    drawRightWing() {
+        for (var i = 0; i <this.rightFingerPositions.length; i++) {
+            var wingTipAbsolute = {x: this.rightFingerPositions[i].x, y: this.rightFingerPositions[i].y};
             context.beginPath();
             context.moveTo(this.rightClawPosition.absolute.x, this.rightClawPosition.absolute.y);
             context.lineTo(wingTipAbsolute.x, wingTipAbsolute.y);
             context.stroke();
         }
+    },
+    
+    drawInnerMembrane() {
+        if ((this.leftFingerPositions.length < 1) | (this.rightFingerPositions.length < 1)) {
+            return;
+        }
+        context.save();
+        context.fillStyle = this.membraneColor;
+        context.globalAlpha = this.membraneAlpha;
+        context.beginPath();
+        // follow from neck along left arm line
+        context.moveTo(this.neckPosition.x, this.neckPosition.y);
+        context.lineTo(this.leftElbowPosition.absolute.x, this.leftElbowPosition.absolute.y);
+        context.lineTo(this.leftClawPosition.absolute.x, this.leftClawPosition.absolute.y);
+        
+        context.lineTo(
+            this.leftFingerPositions[this.leftFingerPositions.length-1].x,
+            this.leftFingerPositions[this.leftFingerPositions.length-1].y
+        );
+        
+        // curve left to right wing
+        context.bezierCurveTo(
+            this.leftElbowPosition.absolute.x, 
+            this.leftElbowPosition.absolute.y, 
+            this.rightElbowPosition.absolute.x, 
+            this.rightElbowPosition.absolute.y, 
+            this.rightFingerPositions[this.rightFingerPositions.length-1].x, 
+            this.rightFingerPositions[this.rightFingerPositions.length-1].y
+        );
+        //back to claw, elbow, neck
+        context.lineTo(this.rightClawPosition.absolute.x, this.rightClawPosition.absolute.y);
+        context.lineTo(this.rightElbowPosition.absolute.x, this.rightElbowPosition.absolute.y);
+        context.closePath();
+        context.fill();
+        context.restore();
+    },
+    
+    drawOuterMembrane() {
+        if ((this.leftFingerPositions.length < 1) | (this.rightFingerPositions.length < 1)) {
+            return;
+        }
+        context.save();
+        context.fillStyle = this.membraneColor;
+        context.globalAlpha = this.membraneAlpha;
+        context.beginPath();
+        context.moveTo(this.leftClawPosition.absolute.x, this.leftClawPosition.absolute.y);
+        context.lineTo(this.leftFingerPositions[0].x, this.leftFingerPositions[0].y);
+        // curves within left wing
+        for (var i = 0; i < this.leftFingerPositions.length-1; i++) {
+            var midPoint = {
+                x: (this.leftClawPosition.absolute.x + this.leftFingerPositions[i].x + this.leftFingerPositions[i+1].x) / 3,
+                y: (this.leftClawPosition.absolute.y + this.leftFingerPositions[i].y + this.leftFingerPositions[i+1].y) / 3
+            };
+            context.quadraticCurveTo(midPoint.x, midPoint.y, this.leftFingerPositions[i+1].x, this.leftFingerPositions[i+1].y);
+        }
+        context.closePath();
+        context.fill();
+        
+        context.beginPath();
+        context.moveTo(
+            this.rightFingerPositions[this.rightFingerPositions.length-1].x,
+            this.rightFingerPositions[this.rightFingerPositions.length-1].y
+        );
+        // curves within right wing
+        for (var i = this.rightFingerPositions.length-1; i > 0; i--) {
+            var midPoint = {
+                x: (this.rightClawPosition.absolute.x + this.rightFingerPositions[i].x + this.rightFingerPositions[i-1].x) / 3,
+                y: (this.rightClawPosition.absolute.y + this.rightFingerPositions[i].y + this.rightFingerPositions[i-1].y) / 3
+            };
+            context.quadraticCurveTo(midPoint.x, midPoint.y, this.rightFingerPositions[i-1].x, this.rightFingerPositions[i-1].y);
+        }
+        // return to neck along right wing
+        context.lineTo(this.rightClawPosition.absolute.x, this.rightClawPosition.absolute.y);
+//        context.lineTo(this.rightElbowPosition.absolute.x, this.rightElbowPosition.absolute.y);
+        //context.lineTo(this.neckPosition.x, this.neckPosition.y);
+        context.closePath();
+        context.fill();
+        
+        context.restore();
     },
     
     drawLimbs() {
@@ -679,13 +785,14 @@ const dragon = {
         this.drawLeftLeg();
         this.drawRightLeg();
         
-        this.drawLeftWing(1.3);
-        this.drawRightWing(1.3);
-        
         this.drawLimb(this.leftClawPosition, this.neckPosition, this.rotation, 0);
         this.drawLimb(this.rightClawPosition, this.neckPosition, this.rotation, 0);
         this.drawLimb(this.leftFootPosition, this.hipPosition, this.rotation);
         this.drawLimb(this.rightFootPosition, this.hipPosition, this.rotation);
+        
+        this.drawOuterMembrane();
+        this.drawLeftWing();
+        this.drawRightWing();
     },
     
     fire: {
@@ -830,9 +937,10 @@ const dragon = {
         this.flexWings();
         this.updateLimbs();
         
-        this.drawLimbs();
         this.drawTail(show);
+        this.drawInnerMembrane();
         this.drawSpine(show);
+        this.drawLimbs();
         //this.drawHips();
         this.drawNeck();
         //this.drawShoulders();
@@ -1112,8 +1220,8 @@ document.addEventListener('mouseup', function(event) {
 
 function render() {
     context.clearRect(0, 0, canvas.width, canvas.height);
-    dragon.update();
     interlopers.update();
+    dragon.update();
     
     // Loop the rendering
     requestAnimationFrame(render);
