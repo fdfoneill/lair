@@ -28,6 +28,7 @@ var cursorPosition = {x: 0, y: 0};
 canvas.addEventListener("mousemove", (event) => {
     cursorPosition.x = event.clientX - rect.left;
     cursorPosition.y = event.clientY - rect.top;
+//    context.fillText(".", cursorPosition.x, cursorPosition.y);
 });
 
 const entrances = new Map([
@@ -871,6 +872,7 @@ const interlopers = {
             y: y,
             facing: facing,
             speed: speed + ((Math.random() - 0.5) * 20),
+            maxHp: hp,
             hp: hp,
             symbol: symbol,
             symbolRotation: symbolRotation,
@@ -931,7 +933,7 @@ const interlopers = {
                 // check for out-of-bounds
                 if ((this.x > canvasSize) | (this.x < 0) | (this.y > canvasSize) | (this.y < 0)) {
                     this.dead = true;
-                    goldStolen += this.lifeTime;
+                    goldStolen += Math.min(this.lifeTime, this.maxHp);
                 }
                 this.lifeTime += (Date.now() - interlopers.interloperClock)/1000;
             },
@@ -1006,6 +1008,9 @@ document.addEventListener('keydown', function(event) {
         }
     }
 });
+
+
+const background = {};
 
 function distanceToNearestEntrance(x, y) {
     var entranceNames = Array.from(entrances.keys());
