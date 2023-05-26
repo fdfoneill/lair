@@ -77,6 +77,11 @@ const dragon = {
     fireSpeed: 4,
     fireDuration: 800,
     fireSpread: 0.3,
+    
+    goutSpeed: 4,
+    goutDuration: 400,
+    goutSpread: 0.1,
+    
     fireSymbol: ".",
     fireColor: "#ff0000",
     fireDamage: 5,
@@ -809,21 +814,30 @@ const dragon = {
         
         particles: [],
         
-        newParticle(source) {
+        newParticle(source, gout=false) {
+            if (gout) {
+                var _duration = source.goutDuration;
+                var _speed = source.goutSpeed;
+                var _spread = source.goutSpread;
+            } else {
+                var _duration = source.fireDuration;
+                var _speed = source.fireSpeed;
+                var _spread = source.fireSpread;
+            }
             np = {
                 location: {x: source.headPosition.x, y: source.headPosition.y},
                 created: Date.now(),
                 lastUpdated: Date.now(),
                 //angle: getAngleBetweenPoints(source.headPosition.x, source.headPosition.y, cursorPosition.x, cursorPosition.y),
                 angle: source.faceAngle,
-                duration: source.fireDuration + ((Math.random()-0.5)*source.fireDuration),
+                duration: _duration + ((Math.random()-0.5)*source.fireDuration),
                 color: source.fireColor,
                 symbol: source.fireSymbol,
                 expired: false,
                 move() {
-                    this.angle += (Math.random() - 0.5) * source.fireSpread;
-                    this.location.x += Math.cos(this.angle) * (source.fireSpeed+((Math.random()-0.5)*source.fireSpeed));
-                    this.location.y += Math.sin(this.angle) * (source.fireSpeed+((Math.random()-0.5)*source.fireSpeed));
+                    this.angle += (Math.random() - 0.5) * _spread;
+                    this.location.x += Math.cos(this.angle) * (_speed+((Math.random()-0.5)*_speed));
+                    this.location.y += Math.sin(this.angle) * (_speed+((Math.random()-0.5)*_speed));
                 },
                 draw() {
                     var symbol_size = context.measureText(this.symbol).width;
@@ -868,7 +882,7 @@ const dragon = {
             this.spurtClock = Date.now();
         },
         
-        spurt() {
+        spurt(gout=false) {
             if (!this.fireLock) {
                 var timeSinceLastSpurt = (Date.now() - this.spurtClock);
                 if (timeSinceLastSpurt > this.burstSize) {
@@ -876,7 +890,7 @@ const dragon = {
                 }
                 var spurtSize = timeSinceLastSpurt;
                 for (var i=1; i < spurtSize; i++) {
-                    this.particles.push(this.newParticle(dragon));
+                    this.particles.push(this.newParticle(dragon, gout));
                     this.currentFireTank -= 1;
                     this.currentFireTank = Math.max(this.currentFireTank, 0);
                 }
@@ -902,14 +916,19 @@ const dragon = {
     },
     
     update() {
+        // check for movement key
         if (isKeyDown(" ")) {
             this.moveShoulders();   
             this.turnBody();
             this.moveHips();
         }
+        // check for fire key(s)
         if (isKeyDown("f")) {
             this.fire.spurt();
         }
+//        else if (isKeyDown("d")) {
+//            this.fire.spurt(gout=true);
+//        }
         this.fire.drawTank();
         this.rotation = angleToMod2Pi(this.rotation);
         
