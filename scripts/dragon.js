@@ -901,6 +901,7 @@ const dragon = {
             context.save();
             if (this.currentFireTank > (this.maxFireTank * 0.66)) {
                 context.fillStyle = "#17db17"; // green
+                context.fillStyle = "#25d025"; // dark green
             } else if (this.currentFireTank > (this.maxFireTank * 0.33)) {
                 context.fillStyle = "#ffa500"; //orange
             } else {
@@ -1044,13 +1045,14 @@ const interlopers = {
                 }
                 //adjust color
                 if (this.hp <= 5) {
-                    this.color = "#e06666";
+                    this.color = "#e06666"; // red
                 } else if (this.hp <= 10) {
-                    this.color = "#a1e066";
+                    this.color = "#a1e066"; // green
+                    this.color = "#25d025"; // dark green
                 } else if (this.hp <= 20) {
-                    this.color = "#2c9caf"
+                    this.color = "#2c9caf"; // blue
                 } else {
-                    this.color = "#c066e0";
+                    this.color = "#c066e0"; // purple
                 }
                 // check for kill
                 if (this.hp <= 0) {
@@ -1137,7 +1139,30 @@ document.addEventListener('keydown', function(event) {
 });
 
 
-const background = {};
+var nBackgroundTiles = 3;
+var backgroundAlpha = 0.2;
+var backgroundTile = new Image();
+backgroundTile.src = "assets/cave_tile.jpeg"
+
+function drawBackground() {
+    context.save();
+    context.globalAlpha = backgroundAlpha;
+    var tileSize = canvasSize / nBackgroundTiles;
+    for (var i = 0; i <= (canvasSize - tileSize); i+=tileSize) {
+        for (var j = 0; j <= (canvasSize - tileSize); j+=tileSize) {
+            context.drawImage(backgroundTile, i, j, tileSize, tileSize);
+        }
+    }
+//    context.fillStyle = "gray";
+//    context.moveTo(0,0);
+//    context.lineTo(0,canvasSize);
+//    context.lineTo(canvasSize, canvasSize);
+//    context.lineTo(canvasSize,0);
+//    context.closePath();
+//    context.fill();
+    context.restore();
+}
+
 
 function distanceToNearestEntrance(x, y) {
     var entranceNames = Array.from(entrances.keys());
@@ -1239,6 +1264,7 @@ document.addEventListener('mouseup', function(event) {
 
 function render() {
     context.clearRect(0, 0, canvas.width, canvas.height);
+    drawBackground();
     interlopers.update();
     dragon.update();
     
