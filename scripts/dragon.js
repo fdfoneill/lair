@@ -2,11 +2,11 @@ var showGuides = document.getElementById("showGuides");
 
 var slider = document.getElementById("hordeSize");
 var output = document.getElementById("sliderLabel");
-output.innerHTML = "Horde size: " + slider.value; // Display the default slider value
+output.innerHTML = "Party size: " + slider.value; // Display the default slider value
 
 // Update the current slider value (each time you drag the slider handle)
 slider.oninput = function() {
-  output.innerHTML = "Horde size: " + this.value;
+  output.innerHTML = "Party size: " + this.value;
 }
 
 // get foe type
