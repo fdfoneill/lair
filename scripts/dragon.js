@@ -1139,7 +1139,7 @@ document.addEventListener('keydown', function(event) {
 });
 
 
-var nBackgroundTiles = 3;
+var nBackgroundTiles = 1;
 var backgroundAlpha = 0.2;
 var backgroundTile = new Image();
 backgroundTile.src = "assets/cave_tile.jpeg"
